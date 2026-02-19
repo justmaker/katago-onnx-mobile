@@ -1,0 +1,33 @@
+name: katago_onnx_mobile
+description: "Flutter plugin for KataGo ONNX inference on mobile devices (Android/iOS)."
+version: 0.1.0
+publish_to: 'none'
+homepage: https://github.com/justmaker/katago-onnx-mobile
+
+environment:
+  sdk: ^3.5.0
+  flutter: '>=3.3.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  onnxruntime: ^1.4.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.justmaker.katago_onnx_mobile
+        pluginClass: KatagoOnnxMobilePlugin
+      ios:
+        pluginClass: KatagoOnnxMobilePlugin
+
+  assets:
+    - assets/katago/model.onnx
+    - assets/katago/model.bin.gz
+    - assets/katago/model.bin
