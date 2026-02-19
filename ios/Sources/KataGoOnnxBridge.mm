@@ -215,9 +215,9 @@ static std::string locToGTP(Loc loc, int boardXSize, int boardYSize) {
                 0      // defaultSymmetry
             );
 
-            // CRITICAL: Single-threaded mode enforced via numSearchThreads=1
-            // Note: setSingleThreadedMode() not available in all KataGo versions
-            LOG_INFO(@"✓ Single-threaded mode enforced via numSearchThreads=1");
+            // CRITICAL: Single-threaded mode - evaluate on calling thread directly
+            g_nnEval->setSingleThreadedMode(true);
+            LOG_INFO(@"✓ Single-threaded mode enabled");
 
             // DO NOT call spawnServerThreads() - we use single-threaded mode
 
