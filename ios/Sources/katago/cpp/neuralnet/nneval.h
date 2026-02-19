@@ -193,6 +193,10 @@ class NNEvaluator {
   //After spawnServerThreads has returned, check if is was using FP16.
   bool isAnyThreadUsingFP16() const;
 
+  //Enable single-threaded mode (for iOS to avoid pthread crashes)
+  void setSingleThreadedMode(bool enabled);
+  bool getSingleThreadedMode() const;
+
   //These are thread-safe. Setting them in the middle of operation might only affect future
   //neural net evals, rather than any in-flight.
   bool getDoRandomize() const;
@@ -265,6 +269,13 @@ class NNEvaluator {
   std::atomic<int> currentDefaultSymmetry;
   //Modifiable batch size smaller than maxBatchSize
   std::atomic<int> currentBatchSize;
+
+  //Single-threaded mode flag (iOS)
+  std::atomic<bool> singleThreadedMode;
+
+  //Lazy-initialized resources for single-threaded mode
+  ComputeHandle* syncComputeHandle;
+  NNServerBuf* syncServerBuf;
 
   //Queued up requests
   ThreadSafeQueue<NNResultBuf*> queryQueue;

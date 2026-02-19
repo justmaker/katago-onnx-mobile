@@ -106,6 +106,9 @@ NNEvaluator::NNEvaluator(
    currentDoRandomize(doRandomize),
    currentDefaultSymmetry(defaultSymmetry),
    currentBatchSize(maxBatchSz),
+   singleThreadedMode(false),
+   syncComputeHandle(nullptr),
+   syncServerBuf(nullptr),
    queryQueue()
 {
   if(nnXLen > NNPos::MAX_BOARD_LEN)
@@ -160,6 +163,16 @@ NNEvaluator::NNEvaluator(
 
 NNEvaluator::~NNEvaluator() {
   killServerThreads();
+
+  // Clean up single-threaded mode resources
+  if(syncComputeHandle != nullptr) {
+    NeuralNet::freeComputeHandle(syncComputeHandle);
+    syncComputeHandle = nullptr;
+  }
+  if(syncServerBuf != nullptr) {
+    delete syncServerBuf;
+    syncServerBuf = nullptr;
+  }
 
   if(computeContext != NULL)
     NeuralNet::freeComputeContext(computeContext);
@@ -821,17 +834,60 @@ void NNEvaluator::evaluate(
   buf.symmetry = nnInputParams.symmetry;
   buf.policyOptimism = nnInputParams.policyOptimism;
 
-  unique_lock<std::mutex> lock(bufferMutex);
-  numOngoingEvals += 1;
-  lock.unlock();
+  // Single-threaded mode (iOS): direct synchronous evaluation
+  if(singleThreadedMode.load()) {
+    // Lazy-init compute handle for single-threaded mode
+    if(syncComputeHandle == nullptr) {
+      syncComputeHandle = NeuralNet::createComputeHandle(
+        computeContext, loadedModel, logger,
+        1, /* maxBatchSize */
+        requireExactNNLen, inputsUseNHWC,
+        -1, /* gpuIdx */
+        0 /* serverThreadIdx */
+      );
+      syncServerBuf = new NNServerBuf(*this, loadedModel);
+    }
 
-  bool suc = queryQueue.forcePush(&buf);
-  assert(suc);
+    // Determine symmetry
+    if(buf.symmetry == NNInputs::SYMMETRY_NOTSPECIFIED) {
+      buf.symmetry = currentDefaultSymmetry.load();
+    }
 
-  unique_lock<std::mutex> resultLock(buf.resultMutex);
-  while(!buf.hasResult)
-    buf.clientWaitingForResult.wait(resultLock);
-  resultLock.unlock();
+    // Create output
+    NNOutput* output = new NNOutput();
+    output->nnXLen = nnXLen;
+    output->nnYLen = nnYLen;
+    if(includeOwnerMap)
+      output->whiteOwnerMap = new float[nnXLen * nnYLen];
+
+    // Direct synchronous call to ONNX backend
+    NNResultBuf* resultBufPtr = &buf;
+    vector<NNOutput*> outputBuf = {output};
+    NeuralNet::getOutput(syncComputeHandle, syncServerBuf->inputBuffers, 1, &resultBufPtr, outputBuf);
+
+    buf.result = std::shared_ptr<NNOutput>(output);
+    buf.hasResult = true;
+
+    // Update stats
+    m_numRowsProcessed++;
+    m_numBatchesProcessed++;
+
+    // Continue to post-processing below
+  }
+  else {
+    // Multi-threaded mode: queue-based evaluation (original code)
+    unique_lock<std::mutex> lock(bufferMutex);
+    numOngoingEvals += 1;
+    lock.unlock();
+
+    bool suc = queryQueue.forcePush(&buf);
+    assert(suc);
+
+    unique_lock<std::mutex> resultLock(buf.resultMutex);
+    while(!buf.hasResult)
+      buf.clientWaitingForResult.wait(resultLock);
+    resultLock.unlock();
+  }
 
   //Perform postprocessing on the result - turn the nn output into probabilities
   //As a hack though, if the only thing we were missing was the ownermap, just grab the old policy and values
@@ -1248,4 +1304,16 @@ void NNCacheTable::clear() {
     }
     buf.reset();
   }
+}
+
+// Single-threaded mode methods (for iOS)
+void NNEvaluator::setSingleThreadedMode(bool enabled) {
+  singleThreadedMode.store(enabled);
+  if(logger != nullptr && enabled) {
+    logger->write("NNEvaluator: Single-threaded mode enabled (no pthread)");
+  }
+}
+
+bool NNEvaluator::getSingleThreadedMode() const {
+  return singleThreadedMode.load();
 }
