@@ -115,10 +115,20 @@ public class KatagoOnnxMobilePlugin: NSObject, FlutterPlugin, FlutterStreamHandl
 
         let maxVisits = args["maxVisits"] as? Int ?? 500
 
+        // Convert moves from ["B Q16", "W D4"] to [["B", "Q16"], ["W", "D4"]]
+        var bridgeArgs = args
+        if let moves = args["moves"] as? [String] {
+            let converted = moves.compactMap { move -> [String]? in
+                let parts = move.split(separator: " ").map(String.init)
+                return parts.count == 2 ? parts : nil
+            }
+            bridgeArgs["moves"] = converted
+        }
+
         startProgressTimer(maxVisits: maxVisits)
 
         DispatchQueue.global(qos: .userInitiated).async {
-            let jsonResult = KataGoOnnxBridge.analyzePosition(args)
+            let jsonResult = KataGoOnnxBridge.analyzePosition(bridgeArgs)
 
             DispatchQueue.main.async {
                 self.stopProgressTimer()
