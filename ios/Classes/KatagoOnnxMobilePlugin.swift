@@ -3,6 +3,7 @@ import UIKit
 
 // MARK: - ONNX Engine State
 private var isOnnxInitialized = false
+private var currentBoardSize: Int = 0
 
 public class KatagoOnnxMobilePlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
 
@@ -70,10 +71,17 @@ public class KatagoOnnxMobilePlugin: NSObject, FlutterPlugin, FlutterStreamHandl
 
         let boardSize = args["boardSize"] as? Int ?? 19
 
-        if isOnnxInitialized {
-            NSLog("[KataGoONNX] Engine already initialized")
+        if isOnnxInitialized && currentBoardSize == boardSize {
+            NSLog("[KataGoONNX] Engine already initialized for \(boardSize)x\(boardSize)")
             result(true)
             return
+        }
+
+        // Reinitialize if board size changed
+        if isOnnxInitialized && currentBoardSize != boardSize {
+            NSLog("[KataGoONNX] Board size changed from \(currentBoardSize) to \(boardSize), reinitializing...")
+            KataGoOnnxBridge.destroy()
+            isOnnxInitialized = false
         }
 
         DispatchQueue.global(qos: .userInitiated).async {
@@ -96,6 +104,7 @@ public class KatagoOnnxMobilePlugin: NSObject, FlutterPlugin, FlutterStreamHandl
             )
 
             isOnnxInitialized = success
+            if success { currentBoardSize = boardSize }
             DispatchQueue.main.async {
                 result(success)
             }
@@ -166,6 +175,7 @@ public class KatagoOnnxMobilePlugin: NSObject, FlutterPlugin, FlutterStreamHandl
 
         KataGoOnnxBridge.destroy()
         isOnnxInitialized = false
+        currentBoardSize = 0
         result(true)
     }
 
