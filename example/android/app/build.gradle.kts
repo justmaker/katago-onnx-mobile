@@ -37,6 +37,14 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    packaging {
+        jniLibs {
+            // ONNX Runtime .so is provided by both the plugin's jniLibs and
+            // the onnxruntime Dart package — pick the first one found.
+            pickFirsts.add("lib/*/libonnxruntime.so")
+        }
+    }
 }
 
 flutter {

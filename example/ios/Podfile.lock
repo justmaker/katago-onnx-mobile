@@ -1,0 +1,48 @@
+PODS:
+  - Flutter (1.0.0)
+  - integration_test (0.0.1):
+    - Flutter
+  - katago_onnx_mobile (0.1.0):
+    - Flutter
+    - onnxruntime-objc (~> 1.15.1)
+  - onnxruntime (0.0.1):
+    - Flutter
+    - onnxruntime-objc (= 1.15.1)
+  - onnxruntime-c (1.15.1)
+  - onnxruntime-objc (1.15.1):
+    - onnxruntime-objc/Core (= 1.15.1)
+  - onnxruntime-objc/Core (1.15.1):
+    - onnxruntime-c (= 1.15.1)
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - integration_test (from `.symlinks/plugins/integration_test/ios`)
+  - katago_onnx_mobile (from `.symlinks/plugins/katago_onnx_mobile/ios`)
+  - onnxruntime (from `.symlinks/plugins/onnxruntime/ios`)
+
+SPEC REPOS:
+  trunk:
+    - onnxruntime-c
+    - onnxruntime-objc
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  integration_test:
+    :path: ".symlinks/plugins/integration_test/ios"
+  katago_onnx_mobile:
+    :path: ".symlinks/plugins/katago_onnx_mobile/ios"
+  onnxruntime:
+    :path: ".symlinks/plugins/onnxruntime/ios"
+
+SPEC CHECKSUMS:
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
+  katago_onnx_mobile: 0b46ed88379efc801f34ebe8f188103cd36efd10
+  onnxruntime: 2ab1957eb029c71d47f7bb35cc4efc9f0d297828
+  onnxruntime-c: ebdcfd8650bcbd10121c125262f99dea681b92a3
+  onnxruntime-objc: ae7acec7a3d03eaf072d340afed7a35635c1c2a6
+
+PODFILE CHECKSUM: b164ede9e1daa7fa9466e95ed744d13ab5029cae
+
+COCOAPODS: 1.16.2
